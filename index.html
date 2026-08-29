@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>yjx围棋教学网站</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+:root {
+  --green-deep: #3d6b4f; --green-mid: #5a8a6a; --green-light: #a8c5b0;
+  --green-pale: #d4e4d8; --cream: #f5ecd7; --cream-dark: #e8d9b8;
+  --wood: #e0b870; --wood-dark: #c9a050; --ink: #2c3e35; --ink-light: #5a6b60;
+  --white-stone: #f8f8f0; --black-stone: #1a1a1a; --gold: #d4a843;
+  --red-err: #c0392b; --green-ok: #27ae60;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(180deg, #e8ede4 0%, #d8e0d4 100%); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.header { background: linear-gradient(180deg, var(--green-deep) 0%, #4a7a5a 100%); padding: 0; position: relative; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 18px 20px; display: flex; align-items: center; justify-content: center; position: relative; }
+.scroll-title { font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 700; color: var(--cream); letter-spacing: 8px; background: linear-gradient(180deg, #c8d8c8 0%, #a8c0a8 50%, #c8d8c8 100%); color: var(--green-deep); padding: 8px 48px; border-radius: 4px; position: relative; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+.scroll-title::before, .scroll-title::after { content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 14px; height: 28px; background: linear-gradient(90deg, #8a9a8a, #6a7a6a); border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.scroll-title::before { left: -7px; } .scroll-title::after { right: -7px; }
+.back-btn { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: var(--cream); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.back-btn:hover { background: rgba(255,255,255,0.25); } .back-btn.hidden { display: none; }
+.main { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+.course-list { display: flex; flex-direction: column; gap: 12px; }
+.course-card { background: var(--cream); border: 2px solid var(--green-light); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.25s ease; position: relative; overflow: hidden; }
+.course-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--green-mid); opacity: 0; transition: opacity 0.25s; }
+.course-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(61,107,79,0.15); border-color: var(--green-mid); }
+.course-card:hover::before { opacity: 1; }
+.course-info { flex: 1; }
+.course-num { font-family: 'Noto Serif SC', serif; font-size: 13px; color: var(--green-mid); font-weight: 600; margin-bottom: 2px; }
+.course-title { font-family: 'Noto Serif SC', serif; font-size: 19px; font-weight: 700; color: var(--ink); }
+.course-status { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 12px; }
+.course-status.done { background: var(--green-ok); color: white; font-size: 16px; font-weight: 700; }
+.course-status.progress { background: var(--gold); color: white; font-size: 12px; font-weight: 700; }
+.progress-overview { background: var(--cream); border: 2px solid var(--green-light); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+.progress-ring { width: 64px; height: 64px; border-radius: 50%; background: conic-gradient(var(--green-mid) var(--pct, 0%), var(--green-pale) var(--pct, 0%)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+.progress-ring::after { content: ''; position: absolute; inset: 6px; background: var(--cream); border-radius: 50%; }
+.progress-ring span { position: relative; z-index: 1; font-family: 'Noto Serif SC', serif; font-size: 18px; font-weight: 700; color: var(--green-deep); }
+.progress-text h3 { font-family: 'Noto Serif SC', serif; font-size: 17px; color: var(--ink); margin-bottom: 4px; }
+.progress-text p { font-size: 13px; color: var(--ink-light); line-height: 1.5; }
+.lesson-view { display: none; } .lesson-view.active { display: block; }
+.lesson-header { text-align: center; margin-bottom: 20px; }
+.lesson-header .lesson-num { font-family: 'Noto Serif SC', serif; font-size: 14px; color: var(--green-mid); font-weight: 600; letter-spacing: 2px; }
+.lesson-header h2 { font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 900; color: var(--green-deep); margin-top: 6px; letter-spacing: 3px; }
+.tab-bar { display: flex; background: var(--cream-dark); border-radius: 10px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+.tab-btn { flex: 1; padding: 10px; border: none; background: transparent; font-family: 'Noto Sans SC', sans-serif; font-size: 15px; font-weight: 500; color: var(--ink-light); border-radius: 7px; cursor: pointer; transition: all 0.2s; }
+.tab-btn.active { background: var(--green-deep); color: var(--cream); box-shadow: 0 2px 8px rgba(61,107,79,0.3); }
+.content-panel { background: var(--cream); border: 2px solid var(--green-light); border-radius: 12px; padding: 24px; line-height: 1.9; font-size: 15.5px; color: var(--ink); }
+.content-panel h3 { font-family: 'Noto Serif SC', serif; font-size: 19px; color: var(--green-deep); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--green-pale); }
+.content-panel p { margin-bottom: 12px; } .content-panel p:last-child { margin-bottom: 0; }
+.content-panel .highlight { background: linear-gradient(180deg, transparent 60%, rgba(212,168,67,0.3) 60%); font-weight: 600; color: var(--green-deep); }
+.content-panel .key-point { background: var(--green-pale); border-left: 4px solid var(--green-mid); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14.5px; }
+.quiz-panel { display: none; } .quiz-panel.active { display: block; }
+.quiz-progress { text-align: center; font-size: 14px; color: var(--ink-light); margin-bottom: 12px; font-weight: 500; }
+.quiz-progress strong { color: var(--green-deep); font-size: 16px; }
+.board-wrapper { background: var(--cream); border: 2px solid var(--green-light); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.board-container { position: relative; width: 100%; max-width: 480px; margin: 0 auto; aspect-ratio: 1; }
+.board-svg { width: 100%; height: 100%; display: block; cursor: pointer; }
+.question-text { background: var(--cream); border: 2px solid var(--green-light); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; text-align: center; }
+.question-text .q-label { display: inline-block; background: var(--green-deep); color: var(--cream); font-size: 12px; padding: 3px 12px; border-radius: 20px; margin-bottom: 10px; font-weight: 500; }
+.question-text p { font-family: 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.7; }
+.feedback { text-align: center; padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 15px; font-weight: 600; display: none; animation: fadeIn 0.3s ease; }
+.feedback.show { display: block; }
+.feedback.correct { background: rgba(39,174,96,0.12); color: var(--green-ok); border: 1px solid rgba(39,174,96,0.3); }
+.feedback.wrong { background: rgba(192,57,43,0.1); color: var(--red-err); border: 1px solid rgba(192,57,43,0.25); }
+.feedback.hint { background: rgba(61,107,79,0.1); color: var(--green-deep); border: 1px dashed rgba(61,107,79,0.4); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.action-row { display: flex; gap: 12px; justify-content: center; }
+.btn { padding: 12px 32px; border: none; border-radius: 10px; font-family: 'Noto Sans SC', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--green-deep); color: var(--cream); box-shadow: 0 3px 10px rgba(61,107,79,0.25); }
+.btn-primary:hover { background: #4a7a5a; transform: translateY(-1px); }
+.btn-secondary { background: var(--cream-dark); color: var(--ink); border: 1px solid var(--green-light); }
+.btn-secondary:hover { background: #ddd0b0; }
+.btn-next { background: var(--gold); color: var(--ink); box-shadow: 0 3px 10px rgba(212,168,67,0.3); }
+.btn-next:hover { background: #e0b850; transform: translateY(-1px); }
+.complete-panel { text-align: center; padding: 40px 20px; background: var(--cream); border: 2px solid var(--green-light); border-radius: 12px; }
+.complete-panel .trophy { font-size: 56px; margin-bottom: 16px; }
+.complete-panel h3 { font-family: 'Noto Serif SC', serif; font-size: 24px; color: var(--green-deep); margin-bottom: 10px; }
+.complete-panel p { color: var(--ink-light); font-size: 15px; margin-bottom: 24px; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--green-deep); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -2px 12px rgba(0,0,0,0.15); z-index: 100; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; color: rgba(245,236,215,0.6); font-size: 11px; cursor: pointer; padding: 4px 12px; transition: color 0.2s; background: none; border: none; font-family: 'Noto Sans SC', sans-serif; }
+.nav-item.active { color: var(--cream); } .nav-item svg { width: 22px; height: 22px; }
+.play-header { text-align: center; margin-bottom: 16px; }
+.play-title { font-family: 'Noto Serif SC', serif; font-size: 24px; color: var(--green-deep); margin: 0 0 10px; }
+.play-status { display: flex; justify-content: center; gap: 20px; align-items: center; }
+.turn-indicator { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 20px; background: var(--cream); color: var(--green-deep); font-weight: 600; font-size: 15px; border: 1.5px solid var(--green-light); }
+.turn-indicator::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #4a4a4a, #1a1a1a); border: 1px solid #000; }
+.turn-indicator.white-turn::before { background: radial-gradient(circle at 35% 35%, #ffffff, #d8d0c0); border: 1px solid #a09080; }
+.move-count { font-size: 14px; color: var(--ink-light); }
+.play-board-wrap { display: flex; justify-content: center; background: var(--cream); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--green-light); }
+.play-board-wrap .board-svg { width: 100%; max-width: 440px; height: auto; cursor: pointer; }
+.play-controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.play-btn { padding: 10px 22px; border: none; border-radius: 8px; background: var(--green-deep); color: #fff; font-size: 15px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.play-btn:hover { background: var(--green-mid); transform: translateY(-1px); }
+.play-info { text-align: center; color: var(--ink-light); font-size: 13.5px; line-height: 1.7; }
+.play-mode-select { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.mode-btn { padding: 8px 20px; border: 1.5px solid var(--green-light); border-radius: 20px; background: var(--cream); color: var(--green-deep); font-size: 14px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-weight: 500; }
+.mode-btn:hover { border-color: var(--green-deep); }
+.mode-btn.active { background: var(--green-deep); color: #fff; border-color: var(--green-deep); }
+.play-color-select { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.color-label { font-size: 14px; color: var(--ink-light); }
+.color-btn { padding: 6px 16px; border: 1.5px solid var(--green-light); border-radius: 16px; background: #fff; color: var(--green-deep); font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.color-btn:hover { border-color: var(--green-deep); }
+.color-btn.active { background: var(--green-mid); color: #fff; border-color: var(--green-mid); }
+.ai-thinking { display: inline-block; margin-left: 8px; font-size: 13px; color: var(--green-mid); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.sponsor-container { display: flex; justify-content: center; padding: 20px 10px; }
+.sponsor-card { background: var(--cream); border-radius: 16px; padding: 32px 28px; max-width: 420px; width: 100%; text-align: center; border: 1px solid var(--green-light); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+.sponsor-title { font-family: 'Noto Serif SC', serif; font-size: 26px; color: var(--green-deep); margin: 0 0 12px; }
+.sponsor-desc { font-size: 14.5px; color: var(--ink-light); line-height: 1.8; margin: 0 0 24px; }
+.sponsor-qr-wrap { background: #1677ff; border-radius: 14px; padding: 20px 20px 16px; margin-bottom: 24px; display: inline-block; }
+.sponsor-qr-header { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 14px; letter-spacing: 1px; }
+.sponsor-qr { width: 200px; height: auto; border-radius: 8px; background: #fff; padding: 8px; display: block; margin: 0 auto; }
+.sponsor-contact { background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e8e0d0; }
+.contact-label { font-size: 13px; color: var(--ink-light); margin-bottom: 6px; }
+.contact-email { font-size: 16px; color: var(--green-deep); font-weight: 600; text-decoration: none; word-break: break-all; }
+.contact-email:hover { text-decoration: underline; }
+@media (max-width: 480px) {
+  .scroll-title { font-size: 20px; padding: 6px 32px; letter-spacing: 5px; }
+  .lesson-header h2 { font-size: 23px; }
+  .content-panel { padding: 18px; font-size: 14.5px; }
+  .course-title { font-size: 17px; }
+  .question-text p { font-size: 15.5px; }
+  .board-wrapper { padding: 10px; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <button class="back-btn hidden" id="backBtn" onclick="goBack()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="scroll-title" id="headerTitle">yjx围棋教学网站</div>
+  </div>
+</header>
+<main class="main">
+  <section id="listView">
+    <div class="progress-overview" id="progressOverview"></div>
+    <div class="course-list" id="courseList"></div>
+  </section>
+  <section id="playView" style="display:none;">
+    <div class="play-header">
+      <h2 class="play-title" id="playTitle">双人对弈</h2>
+      <div class="play-status">
+        <span class="turn-indicator" id="playTurn">黑方落子</span>
+        <span class="move-count" id="playMoveCount">第 0 手</span>
+      </div>
+    </div>
+    <div class="play-mode-select">
+      <button class="mode-btn active" id="modePvp" onclick="setPlayMode('pvp')">双人对弈</button>
+      <button class="mode-btn" id="modePve" onclick="setPlayMode('pve')">人机对弈</button>
+    </div>
+    <div class="play-color-select" id="colorSelect" style="display:none;">
+      <span class="color-label">你执：</span>
+      <button class="color-btn active" id="colorBlack" onclick="setPlayerColor(1)">黑棋（先手）</button>
+      <button class="color-btn" id="colorWhite" onclick="setPlayerColor(2)">白棋（后手）</button>
+    </div>
+    <div class="play-board-wrap">
+      <svg class="board-svg" id="playBoardSvg" viewBox="0 0 480 480"></svg>
+    </div>
+    <div class="play-controls">
+      <button class="play-btn" onclick="playUndo()">悔棋</button>
+      <button class="play-btn" onclick="playReset()">重新开始</button>
+      <button class="play-btn" onclick="playPass()">虚手(Pass)</button>
+    </div>
+    <div class="play-info">
+      <p id="playInfoText">9路棋盘双人对弈：黑白轮流落子，自动提子。点击交叉点落子，支持悔棋。</p>
+    </div>
+  </section>
+  <section id="sponsorView" style="display:none;">
+    <div class="sponsor-container">
+      <div class="sponsor-card">
+        <h2 class="sponsor-title">支持作者</h2>
+        <p class="sponsor-desc">如果这个网站对你有帮助，欢迎扫码支持，让我继续创作更多优质内容！</p>
+        <div class="sponsor-qr-wrap">
+          <div class="sponsor-qr-header">推荐使用支付宝</div>
+          <img src="alipay-qr.png" alt="支付宝收款码" class="sponsor-qr" onerror="this.style.display='none';this.parentElement.innerHTML+='<p style=&quot;color:#fff;font-size:13px;margin-top:8px;&quot;>二维码加载中...</p>'">
+        </div>
+        <div class="sponsor-contact">
+          <div class="contact-label">联系方式</div>
+          <a href="mailto:2076296356@qq.com" class="contact-email">2076296356@qq.com</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="lesson-view" id="lessonView">
+    <div class="lesson-header">
+      <div class="lesson-num" id="lessonNum"></div>
+      <h2 id="lessonTitle"></h2>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('content')">文字讲解</button>
+      <button class="tab-btn" onclick="switchTab('quiz')">实战演练</button>
+    </div>
+    <div class="content-panel" id="contentPanel"></div>
+    <div class="quiz-panel" id="quizPanel">
+      <div class="quiz-progress" id="quizProgress"></div>
+      <div class="board-wrapper">
+        <div class="board-container">
+          <svg class="board-svg" id="boardSvg" viewBox="0 0 480 480"></svg>
+        </div>
+      </div>
+      <div class="question-text" id="questionText"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="action-row" id="actionRow"></div>
+    </div>
+    <div class="complete-panel" id="completePanel" style="display:none;">
+      <div class="trophy">
+        <svg viewBox="0 0 64 64" width="56" height="56" fill="none">
+          <path d="M18 8h28v8c0 10-6 18-14 20-8-2-14-10-14-20V8z" fill="#d4a843" stroke="#b8922e" stroke-width="1.5"/>
+          <path d="M18 12H8c0 8 4 14 10 16M46 12h10c0 8-4 14-10 16" stroke="#d4a843" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="24" y="36" width="16" height="6" fill="#b8922e"/>
+          <rect x="20" y="42" width="24" height="8" rx="2" fill="#d4a843" stroke="#b8922e" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <h3>恭喜完成本课学习！</h3>
+      <p id="completeMsg">你已掌握本课的全部知识点，可以继续学习下一课。</p>
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="goBack()">返回课程列表</button>
+        <button class="btn btn-primary" id="nextCourseBtn" onclick="goNextCourse()">下一课</button>
+      </div>
+    </div>
+  </section>
+</main>
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="goHome()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    课程
+  </button>
+  <button class="nav-item" onclick="showPlay()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+    对弈
+  </button>
+  <button class="nav-item" onclick="showSponsor()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    赞助
+  </button>
+</nav>
+<script>
+const COURSES = [COURSE_DATA_PLACEHOLDER];
+</script>
+</body>
+</html>
