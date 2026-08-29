@@ -177,7 +177,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(180d
         <p class="sponsor-desc">如果这个网站对你有帮助，欢迎扫码支持，让我继续创作更多优质内容！</p>
         <div class="sponsor-qr-wrap">
           <div class="sponsor-qr-header">推荐使用支付宝</div>
-          <img src="alipay-qr.png" alt="支付宝收款码" class="sponsor-qr" onerror="this.style.display='none';this.parentElement.innerHTML+='<p style=&quot;color:#fff;font-size:13px;margin-top:8px;&quot;>二维码加载中...</p>'">
+          <img src="alipay-qr.png" alt="支付宝收款码" class="sponsor-qr">
         </div>
         <div class="sponsor-contact">
           <div class="contact-label">联系方式</div>
@@ -239,8 +239,208 @@ body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(180d
     赞助
   </button>
 </nav>
+<script src="courses-1.js"></script>
+<script src="courses-2.js"></script>
+<script src="courses-3.js"></script>
+<script src="courses-4.js"></script>
 <script>
-const COURSES = [COURSE_DATA_PLACEHOLDER];
+const state = {
+  currentCourse: null, currentTab: 'content', currentQuestion: 0,
+  answered: false, currentBoard: null,
+  progress: JSON.parse(localStorage.getItem('go_progress') || '{}')
+};
+function saveProgress() { localStorage.setItem('go_progress', JSON.stringify(state.progress)); }
+function isCourseUnlocked() { return true; }
+function isCourseDone(id) { return !!state.progress[id]; }
+const BOARD_SIZE = 9, PADDING = 30, CELL = (480 - PADDING * 2) / (BOARD_SIZE - 1);
+const STAR_POINTS = [[2,2],[2,6],[4,4],[6,2],[6,6]];
+function renderBoard(board) {
+  const svg = document.getElementById('boardSvg');
+  let html = `<rect x="0" y="0" width="480" height="480" fill="#e0b870" rx="4"/><rect x="6" y="6" width="468" height="468" fill="none" stroke="#b8922e" stroke-width="2" rx="2"/>`;
+  for (let i = 0; i < BOARD_SIZE; i++) { const pos = PADDING + i * CELL;
+    html += `<line x1="${PADDING}" y1="${pos}" x2="${480-PADDING}" y2="${pos}" stroke="#8a6a20" stroke-width="1"/><line x1="${pos}" y1="${PADDING}" x2="${pos}" y2="${480-PADDING}" stroke="#8a6a20" stroke-width="1"/>`; }
+  STAR_POINTS.forEach(([r,c]) => { html += `<circle cx="${PADDING+c*CELL}" cy="${PADDING+r*CELL}" r="4" fill="#5a4a10"/>`; });
+  const cols = 'ABCDEFGHI';
+  for (let i = 0; i < BOARD_SIZE; i++) { const pos = PADDING + i * CELL;
+    html += `<text x="${pos}" y="16" text-anchor="middle" font-size="12" fill="#6a5a20" font-weight="600">${cols[i]}</text><text x="${pos}" y="470" text-anchor="middle" font-size="12" fill="#6a5a20" font-weight="600">${cols[i]}</text><text x="14" y="${pos+4}" text-anchor="middle" font-size="12" fill="#6a5a20" font-weight="600">${BOARD_SIZE-i}</text><text x="466" y="${pos+4}" text-anchor="middle" font-size="12" fill="#6a5a20" font-weight="600">${BOARD_SIZE-i}</text>`; }
+  html += `<defs><radialGradient id="blackGrad" cx="35%" cy="35%"><stop offset="0%" stop-color="#4a4a4a"/><stop offset="100%" stop-color="#1a1a1a"/></radialGradient><radialGradient id="whiteGrad" cx="35%" cy="35%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#d8d0c0"/></radialGradient></defs>`;
+  for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
+    if (board[r][c] !== 0) { const x = PADDING + c * CELL, y = PADDING + r * CELL, b = board[r][c] === 1;
+      html += `<circle cx="${x}" cy="${y}" r="${CELL*0.42}" fill="url(#${b?'blackGrad':'whiteGrad'})" stroke="${b?'#000':'#a09080'}" stroke-width="0.5"/>`; } }
+  svg.innerHTML = html; svg.onclick = handleBoardClick;
+}
+const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+function inBoard(r,c) { return r>=0&&r<BOARD_SIZE&&c>=0&&c<BOARD_SIZE; }
+function getGroup(board,r,c) { const color=board[r][c]; if(color===0)return []; const group=[],visited=new Set(),stack=[[r,c]]; visited.add(r*BOARD_SIZE+c);
+  while(stack.length){const[cr,cc]=stack.pop();group.push([cr,cc]);for(const[dr,dc]of DIRS){const nr=cr+dr,nc=cc+dc;if(inBoard(nr,nc)&&!visited.has(nr*BOARD_SIZE+nc)&&board[nr][nc]===color){visited.add(nr*BOARD_SIZE+nc);stack.push([nr,nc]);}}}return group;}
+function hasBreath(board,group){for(const[r,c]of group)for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;if(inBoard(nr,nc)&&board[nr][nc]===0)return true;}return false;}
+function placeStone(board,r,c,color){if(board[r][c]!==0)return false;board[r][c]=color;let cap=false;for(const[dr,dc]of DIRS){const nr=r+dr,nc=c+dc;if(inBoard(nr,nc)&&board[nr][nc]!==0&&board[nr][nc]!==color){const g=getGroup(board,nr,nc);if(!hasBreath(board,g)){g.forEach(([gr,gc])=>{board[gr][gc]=0;});cap=true;}}}return cap;}
+function handleBoardClick(e){if(state.answered)return;const svg=document.getElementById('boardSvg');const rect=svg.getBoundingClientRect();const x=(e.clientX-rect.left)*(480/rect.width),y=(e.clientY-rect.top)*(480/rect.height);
+  const col=Math.round((x-PADDING)/CELL),row=Math.round((y-PADDING)/CELL);
+  if(row<0||row>=BOARD_SIZE||col<0||col>=BOARD_SIZE)return;
+  const q=COURSES[state.currentCourse].questions[state.currentQuestion];
+  if(q.answers.some(a=>a.row===row&&a.col===col)){state.answered=true;showFeedback(true,'回答正确！');
+    if(q.turn&&state.currentBoard[row][col]===0)placeStone(state.currentBoard,row,col,q.turn);
+    renderBoard(state.currentBoard);showNextButton();
+  }else{showFeedback(false,'再想想～');markWrongPoint(row,col);}
+}
+function markWrongPoint(row,col){const svg=document.getElementById('boardSvg');const m=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  m.setAttribute('cx',PADDING+col*CELL);m.setAttribute('cy',PADDING+row*CELL);m.setAttribute('r',CELL*0.2);m.setAttribute('fill','none');m.setAttribute('stroke','#c0392b');m.setAttribute('stroke-width','2.5');m.setAttribute('opacity','0.8');
+  svg.appendChild(m);setTimeout(()=>m.remove(),1200);}
+function renderCourseList(){const list=document.getElementById('courseList');let html='';
+  COURSES.forEach((course,idx)=>{const done=isCourseDone(course.id);
+    let si='',sc='';if(done){si='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';sc='done';}
+    else{si='<span style="font-size:11px;">进行中</span>';sc='progress';}
+    html+=`<div class="course-card" onclick="openCourse(${idx})"><div class="course-info"><div class="course-num">第 ${course.id} 课</div><div class="course-title">${course.title}</div></div><div class="course-status ${sc}">${si}</div></div>`;});
+  list.innerHTML=html;
+  const doneCount=COURSES.filter(c=>isCourseDone(c.id)).length;
+  const pct=Math.round((doneCount/COURSES.length)*100);
+  document.getElementById('progressOverview').innerHTML=`<div class="progress-ring" style="--pct:${pct}%"><span>${doneCount}/${COURSES.length}</span></div><div class="progress-text"><h3>学习进度</h3><p>已完成 ${doneCount} 课，共 ${COURSES.length} 课。坚持每天学一课，稳步提升棋力！</p></div>`;
+}
+function openCourse(idx){state.currentCourse=idx;state.currentQuestion=0;state.answered=false;state.currentTab='content';
+  const course=COURSES[idx];
+  document.getElementById('listView').style.display='none';document.getElementById('lessonView').classList.add('active');
+  document.getElementById('completePanel').style.display='none';document.getElementById('backBtn').classList.remove('hidden');
+  document.getElementById('headerTitle').textContent=course.title;document.getElementById('lessonNum').textContent=`第 ${course.id} 课`;
+  document.getElementById('lessonTitle').textContent=course.title;document.getElementById('contentPanel').innerHTML=course.content;
+  switchTab('content');window.scrollTo(0,0);}
+function switchTab(tab){state.currentTab=tab;document.querySelectorAll('.tab-btn').forEach((btn,i)=>{btn.classList.toggle('active',(i===0&&tab==='content')||(i===1&&tab==='quiz'));});
+  document.getElementById('contentPanel').style.display=tab==='content'?'block':'none';
+  document.getElementById('quizPanel').classList.toggle('active',tab==='quiz');
+  if(tab==='quiz')renderQuestion();}
+function renderQuestion(){const q=COURSES[state.currentCourse].questions[state.currentQuestion];state.answered=false;
+  document.getElementById('quizProgress').innerHTML=`第 <strong>${state.currentQuestion+1}</strong> / ${COURSES[state.currentCourse].questions.length} 题`;
+  document.getElementById('questionText').innerHTML=`<div class="q-label">实战演练</div><p>${q.prompt}</p>`;
+  document.getElementById('feedback').className='feedback';document.getElementById('feedback').textContent='';
+  state.currentBoard=q.board.map(row=>[...row]);renderBoard(state.currentBoard);
+  document.getElementById('actionRow').innerHTML=`<button class="btn btn-secondary" onclick="showHint()">查看提示</button><button class="btn btn-primary" onclick="resetQuestion()">重置棋盘</button>`;}
+function showHint(){const q=COURSES[state.currentCourse].questions[state.currentQuestion];showFeedback('hint','提示：'+(q.hint||'仔细观察棋盘上棋子的位置关系'));}
+function resetQuestion(){renderQuestion();}
+function showFeedback(type,msg){const fb=document.getElementById('feedback');const cls=type===true||type==='correct'?'correct':(type==='hint'?'hint':'wrong');fb.className='feedback show '+cls;fb.textContent=msg;}
+function showNextButton(){const isLast=state.currentQuestion===COURSES[state.currentCourse].questions.length-1;
+  document.getElementById('actionRow').innerHTML=isLast?`<button class="btn btn-next" onclick="finishCourse()">完成本课</button>`:`<button class="btn btn-next" onclick="nextQuestion()">下一题</button>`;}
+function nextQuestion(){state.currentQuestion++;renderQuestion();}
+function finishCourse(){const course=COURSES[state.currentCourse];state.progress[course.id]=true;saveProgress();
+  document.getElementById('quizPanel').classList.remove('active');document.querySelector('.tab-bar').style.display='none';
+  document.getElementById('contentPanel').style.display='none';document.getElementById('completePanel').style.display='block';
+  const nextIdx=state.currentCourse+1;const nextBtn=document.getElementById('nextCourseBtn');
+  if(nextIdx<COURSES.length){nextBtn.style.display='';nextBtn.textContent='下一课：'+COURSES[nextIdx].title;}
+  else{nextBtn.style.display='none';document.getElementById('completeMsg').textContent='你已完成全部入门课程的学习！建议继续练习死活题和手筋题来巩固提升。';}}
+function goNextCourse(){const nextIdx=state.currentCourse+1;if(nextIdx<COURSES.length){document.querySelector('.tab-bar').style.display='';openCourse(nextIdx);}}
+function goBack(){document.getElementById('lessonView').classList.remove('active');document.getElementById('playView').style.display='none';
+  document.getElementById('sponsorView').style.display='none';document.getElementById('listView').style.display='block';
+  document.getElementById('backBtn').classList.add('hidden');document.getElementById('headerTitle').textContent='yjx围棋教学网站';
+  document.querySelector('.tab-bar').style.display='';document.getElementById('completePanel').style.display='none';
+  setNavActive('课程');renderCourseList();}
+function goHome(){goBack();}
+function setNavActive(name){document.querySelectorAll('.bottom-nav .nav-item').forEach(btn=>{btn.classList.toggle('active',btn.textContent.trim()===name);});}
+function showPlay(){document.getElementById('listView').style.display='none';document.getElementById('lessonView').classList.remove('active');
+  document.getElementById('sponsorView').style.display='none';document.getElementById('playView').style.display='block';
+  document.getElementById('backBtn').classList.add('hidden');document.getElementById('headerTitle').textContent='对弈';
+  document.querySelector('.tab-bar').style.display='none';document.getElementById('completePanel').style.display='none';
+  setNavActive('对弈');if(!playInitialized){initPlay();}renderPlayBoard();}
+function showSponsor(){document.getElementById('listView').style.display='none';document.getElementById('lessonView').classList.remove('active');
+  document.getElementById('playView').style.display='none';document.getElementById('sponsorView').style.display='block';
+  document.getElementById('backBtn').classList.add('hidden');document.getElementById('headerTitle').textContent='赞助支持';
+  document.querySelector('.tab-bar').style.display='none';document.getElementById('completePanel').style.display='none';
+  setNavActive('赞助');}
+const PLAY_SIZE=9,PLAY_PADDING=30,PLAY_CELL=(480-PLAY_PADDING*2)/(PLAY_SIZE-1);
+let playBoard=[],playCurrent=1,playHistory=[],playMoveCount=0,playInitialized=false,playConsecutivePass=0;
+let playMode='pvp',playerColor=1,aiThinking=false;
+function initPlay(){playInitialized=true;document.getElementById('playBoardSvg').addEventListener('click',handlePlayClick);playReset();}
+function setPlayMode(mode){playMode=mode;document.getElementById('modePvp').classList.toggle('active',mode==='pvp');
+  document.getElementById('modePve').classList.toggle('active',mode==='pve');
+  document.getElementById('colorSelect').style.display=mode==='pve'?'flex':'none';
+  document.getElementById('playTitle').textContent=mode==='pve'?'人机对弈':'双人对弈';
+  document.getElementById('playInfoText').textContent=mode==='pve'?'9路棋盘人机对弈：你与AI轮流落子，自动提子。AI会优先提子、自救和打吃。':'9路棋盘双人对弈：黑白轮流落子，自动提子。点击交叉点落子，支持悔棋。';
+  playReset();}
+function setPlayerColor(color){playerColor=color;document.getElementById('colorBlack').classList.toggle('active',color===1);
+  document.getElementById('colorWhite').classList.toggle('active',color===2);playReset();}
+function playReset(){playBoard=Array(PLAY_SIZE).fill(null).map(()=>Array(PLAY_SIZE).fill(0));playCurrent=1;playHistory=[];
+  playMoveCount=0;playConsecutivePass=0;aiThinking=false;updatePlayStatus();renderPlayBoard();
+  if(playMode==='pve'&&playerColor===2)setTimeout(aiMove,400);}
+function updatePlayStatus(){const el=document.getElementById('playTurn');
+  if(aiThinking){el.textContent='AI思考中...';el.classList.add('white-turn');}
+  else{let text=playCurrent===1?'黑方落子':'白方落子';if(playMode==='pve')text+=playCurrent===playerColor?'（你）':'（AI）';
+    el.textContent=text;el.classList.toggle('white-turn',playCurrent===2);}
+  document.getElementById('playMoveCount').textContent=`第 ${playMoveCount} 手`;}
+function renderPlayBoard(){const svg=document.getElementById('playBoardSvg');
+  let html=`<rect x="0" y="0" width="480" height="480" fill="#e0b870" rx="4"/><rect x="6" y="6" width="468" height="468" fill="none" stroke="#b8922e" stroke-width="2" rx="2"/>`;
+  for(let i=0;i<PLAY_SIZE;i++){const pos=PLAY_PADDING+i*PLAY_CELL;
+    html+=`<line x1="${PLAY_PADDING}" y1="${pos}" x2="${480-PLAY_PADDING}" y2="${pos}" stroke="#8a6a20" stroke-width="1"/><line x1="${pos}" y1="${PLAY_PADDING}" x2="${pos}" y2="${480-PLAY_PADDING}" stroke="#8a6a20" stroke-width="1"/>`;}
+  [[2,2],[2,6],[6,2],[6,6],[4,4]].forEach(([r,c])=>{html+=`<circle cx="${PLAY_PADDING+c*PLAY_CELL}" cy="${PLAY_PADDING+r*PLAY_CELL}" r="4" fill="#5a4a10"/>`;});
+  html+=`<defs><radialGradient id="pBlackGrad" cx="35%" cy="35%"><stop offset="0%" stop-color="#4a4a4a"/><stop offset="100%" stop-color="#1a1a1a"/></radialGradient><radialGradient id="pWhiteGrad" cx="35%" cy="35%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#d8d0c0"/></radialGradient></defs>`;
+  for(let r=0;r<PLAY_SIZE;r++)for(let c=0;c<PLAY_SIZE;c++){if(playBoard[r][c]!==0){const x=PLAY_PADDING+c*PLAY_CELL,y=PLAY_PADDING+r*PLAY_CELL,b=playBoard[r][c]===1;
+    html+=`<circle cx="${x}" cy="${y}" r="${PLAY_CELL*0.42}" fill="url(#${b?'pBlackGrad':'pWhiteGrad'})" stroke="${b?'#000':'#a09080'}" stroke-width="0.5"/>`;}}
+  svg.innerHTML=html;}
+function handlePlayClick(e){if(aiThinking)return;if(playMode==='pve'&&playCurrent!==playerColor)return;
+  const svg=document.getElementById('playBoardSvg');const rect=svg.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(480/rect.width),y=(e.clientY-rect.top)*(480/rect.height);
+  const col=Math.round((x-PLAY_PADDING)/PLAY_CELL),row=Math.round((y-PLAY_PADDING)/PLAY_CELL);
+  if(row<0||row>=PLAY_SIZE||col<0||col>=PLAY_SIZE)return;if(playBoard[row][col]!==0)return;
+  if(playDoMove(row,col,playCurrent)&&playMode==='pve'&&playCurrent!==playerColor)setTimeout(aiMove,500);}
+function playDoMove(row,col,color){const snapshot=playBoard.map(r=>[...r]);playBoard[row][col]=color;let captured=false;
+  for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=row+dr,nc=col+dc;
+    if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&playBoard[nr][nc]!==0&&playBoard[nr][nc]!==color){const g=playGetGroup(nr,nc);
+      if(!playHasBreath(g)){g.forEach(([gr,gc])=>{playBoard[gr][gc]=0;});captured=true;}}}
+  const myGroup=playGetGroup(row,col);if(!playHasBreath(myGroup)&&!captured){playBoard=snapshot;return false;}
+  playHistory.push({board:snapshot,current:playCurrent,move:playMoveCount});playMoveCount++;playConsecutivePass=0;
+  playCurrent=color===1?2:1;updatePlayStatus();renderPlayBoard();return true;}
+function playGetGroup(r,c){const color=playBoard[r][c];if(color===0)return[];const group=[],visited=new Set(),stack=[[r,c]];
+  visited.add(r*PLAY_SIZE+c);while(stack.length){const[cr,cc]=stack.pop();group.push([cr,cc]);
+    for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=cr+dr,nc=cc+dc;
+      if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&!visited.has(nr*PLAY_SIZE+nc)&&playBoard[nr][nc]===color){visited.add(nr*PLAY_SIZE+nc);stack.push([nr,nc]);}}}
+  return group;}
+function playHasBreath(group){for(const[r,c]of group)for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=r+dr,nc=c+dc;
+  if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&playBoard[nr][nc]===0)return true;}return false;}
+function playUndo(){if(playHistory.length===0||aiThinking)return;
+  if(playMode==='pve'){if(playHistory.length>=2)playHistory.pop();if(playHistory.length>=1){const last=playHistory.pop();playBoard=last.board;playCurrent=last.current;playMoveCount=last.move;}}
+  else{const last=playHistory.pop();playBoard=last.board;playCurrent=last.current;playMoveCount=last.move;}
+  playConsecutivePass=0;updatePlayStatus();renderPlayBoard();
+  if(playMode==='pve'&&playCurrent!==playerColor&&!aiThinking)setTimeout(aiMove,400);}
+function playPass(){if(aiThinking)return;if(playMode==='pve'&&playCurrent!==playerColor)return;
+  playHistory.push({board:playBoard.map(r=>[...r]),current:playCurrent,move:playMoveCount});playMoveCount++;playConsecutivePass++;
+  playCurrent=playCurrent===1?2:1;updatePlayStatus();
+  if(playConsecutivePass>=2){setTimeout(()=>alert('双方连续虚手，对局结束！'),100);return;}
+  if(playMode==='pve'&&playCurrent!==playerColor)setTimeout(aiMove,500);}
+function aiMove(){if(playMode!=='pve')return;const aiColor=playerColor===1?2:1;if(playCurrent!==aiColor)return;
+  aiThinking=true;updatePlayStatus();const move=aiFindBestMove(aiColor);
+  if(move)playDoMove(move.row,move.col,aiColor);
+  else{playHistory.push({board:playBoard.map(r=>[...r]),current:playCurrent,move:playMoveCount});playMoveCount++;playConsecutivePass++;
+    playCurrent=aiColor===1?2:1;updatePlayStatus();if(playConsecutivePass>=2)setTimeout(()=>alert('双方连续虚手，对局结束！'),100);}
+  aiThinking=false;updatePlayStatus();}
+function aiFindBestMove(color){const opp=color===1?2:1;const candidates=[];
+  for(let r=0;r<PLAY_SIZE;r++)for(let c=0;c<PLAY_SIZE;c++){if(playBoard[r][c]!==0)continue;
+    const testBoard=playBoard.map(row=>[...row]);testBoard[r][c]=color;let captured=0;
+    for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&testBoard[nr][nc]===opp){const g=aiGetGroup(testBoard,nr,nc);
+        if(!aiHasBreath(testBoard,g)){captured+=g.length;g.forEach(([gr,gc])=>{testBoard[gr][gc]=0;});}}}
+    const myG=aiGetGroup(testBoard,r,c);if(!aiHasBreath(testBoard,myG)&&captured===0)continue;
+    let score=captured*100;
+    score+=(countAtariGroups(playBoard,color)-countAtariGroups(testBoard,color))*60;
+    score+=(countAtariGroups(testBoard,opp)-countAtariGroups(playBoard,opp))*35;
+    score+=countNeighbors(playBoard,r,c,color)*4+countNeighbors(playBoard,r,c,opp)*3;
+    score+=(8-Math.abs(r-4)-Math.abs(c-4))*1.5;
+    if(playMoveCount<=1&&(r<=1||r>=7||c<=1||c>=7))score-=20;
+    candidates.push({row:r,col:c,score:score+Math.random()*3});}
+  if(candidates.length===0)return null;candidates.sort((a,b)=>b.score-a.score);return candidates[0];}
+function aiGetGroup(board,r,c){const color=board[r][c];if(color===0)return[];const group=[],visited=new Set(),stack=[[r,c]];
+  visited.add(r*PLAY_SIZE+c);while(stack.length){const[cr,cc]=stack.pop();group.push([cr,cc]);
+    for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=cr+dr,nc=cc+dc;
+      if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&!visited.has(nr*PLAY_SIZE+nc)&&board[nr][nc]===color){visited.add(nr*PLAY_SIZE+nc);stack.push([nr,nc]);}}}
+  return group;}
+function aiHasBreath(board,group){for(const[r,c]of group)for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=r+dr,nc=c+dc;
+  if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&board[nr][nc]===0)return true;}return false;}
+function countAtariGroups(board,color){let count=0;const visited=new Set();
+  for(let r=0;r<PLAY_SIZE;r++)for(let c=0;c<PLAY_SIZE;c++){if(board[r][c]===color&&!visited.has(r*PLAY_SIZE+c)){
+    const g=aiGetGroup(board,r,c);g.forEach(([gr,gc])=>visited.add(gr*PLAY_SIZE+gc));
+    if(aiHasBreath(board,g)){const bs=new Set();for(const[gr,gc]of g)for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){
+      const nr=gr+dr,nc=gc+dc;if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&board[nr][nc]===0)bs.add(nr*PLAY_SIZE+nc);}
+      if(bs.size===1)count++;}}}
+  return count;}
+function countNeighbors(board,r,c,color){let count=0;for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){const nr=r+dr,nc=c+dc;
+  if(nr>=0&&nr<PLAY_SIZE&&nc>=0&&nc<PLAY_SIZE&&board[nr][nc]===color)count++;}return count;}
+renderCourseList();
 </script>
 </body>
 </html>
