@@ -1,7 +1,9 @@
 # 围棋教学网站
 
 围棋教学网站，包含28课系统教学、实战演练、双人对弈、人机对弈等功能。
+## 网站地址
 
+GitHub Pages: https://yjx123-a.github.io/yjx-go-teaching/
 ## 功能特性
 
 - **28课系统教学**：从棋盘认识到手筋，覆盖围棋入门到进阶的全部知识点
@@ -24,9 +26,6 @@
 - localStorage存储学习进度
 - GitHub Pages部署
 
-## 访问
-
-GitHub Pages: https://yjx123-a.github.io/yjx-go-teaching/
 
 ## 联系方式
 
