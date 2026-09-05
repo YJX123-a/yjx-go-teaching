@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>yjx围棋教学网站</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%233d6b4f'/%3E%3Ccircle cx='37' cy='50' r='19' fill='%23111'/%3E%3Ccircle cx='65' cy='50' r='19' fill='%23f8f8f0' stroke='%23999' stroke-width='1'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
 <style>
 :root {
@@ -351,7 +352,7 @@ function initPlay(){playInitialized=true;document.getElementById('playBoardSvg')
 function setPlayMode(mode){playMode=mode;document.getElementById('modePvp').classList.toggle('active',mode==='pvp');
   document.getElementById('modePve').classList.toggle('active',mode==='pve');
   document.getElementById('colorSelect').style.display=mode==='pve'?'flex':'none';
-  document.getElementById('playTitle').textContent=mode==='pve'?'人机对弈':'双人对弈';
+  document.getElementById('playTitle').textContent=mode==='pve'?'双人对弈':'人机对弈';
   document.getElementById('playInfoText').textContent=mode==='pve'?'9路棋盘人机对弈：你与AI轮流落子，自动提子。AI会优先提子、自救和打吃。':'9路棋盘双人对弈：黑白轮流落子，自动提子。点击交叉点落子，支持悔棋。';
   playReset();}
 function setPlayerColor(color){playerColor=color;document.getElementById('colorBlack').classList.toggle('active',color===1);
